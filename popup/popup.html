@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gray Swan Arena Chat Extractor</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- Header: auto-detected challenge -->
+    <header class="app-header">
+      <div class="header-brand">
+        <img src="../icons/icon-32.png" alt="GSA" class="app-icon">
+        <div class="brand-text">
+          <h1>Arena Chat Extractor</h1>
+          <span class="sub-brand">Gray Swan Arena &bull; universal</span>
+        </div>
+      </div>
+      <div class="badge-tag">v2.3.0</div>
+    </header>
+
+    <!-- Detected challenge card -->
+    <section class="challenge-card" id="challengeCard">
+      <div class="challenge-main">
+        <div class="challenge-label">Detected challenge</div>
+        <div class="challenge-name" id="challengeName">&mdash;</div>
+        <div class="challenge-slug"><code id="challengeSlugText">not on a challenge page</code></div>
+        <div id="websiteSummary" class="website-summary hidden"></div>
+      </div>
+      <button id="btnDetect" class="btn-icon" title="Re-detect from the active tab">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        Detect
+      </button>
+    </section>
+
+    <!-- Advanced override (slug + settings) -->
+    <details class="settings-drawer">
+      <summary class="settings-summary">
+        <span>Advanced</span><span class="toggle-icon">&#9662;</span>
+      </summary>
+      <div class="settings-body">
+        <div class="setting-row">
+          <label for="challengeSlug">Challenge slug (override)</label>
+          <input type="text" id="challengeSlug" placeholder="auto-detected" spellcheck="false">
+        </div>
+        <div class="setting-row">
+          <label for="maxPages">Max pages to scan (0 = unlimited)</label>
+          <input type="number" id="maxPages" value="250" min="0" max="5000">
+        </div>
+        <div class="setting-row">
+          <label for="concurrency">Parallel requests (1-10)</label>
+          <input type="number" id="concurrency" value="5" min="1" max="10">
+        </div>
+        <div class="setting-row">
+          <label for="delayMs">Extra request delay (ms)</label>
+          <input type="number" id="delayMs" value="0" min="0" max="2000" step="50">
+        </div>
+        <div class="setting-row checkbox-row">
+          <input type="checkbox" id="fetchFullDetails">
+          <label for="fetchFullDetails">Deep-fetch chat bodies if the list omits them</label>
+        </div>
+      </div>
+    </details>
+
+    <!-- Controls -->
+    <section class="control-section">
+      <div class="btn-row">
+        <button id="btnStart" class="btn btn-primary" title="Fast incremental sync (only new chats & updated verdicts) when cache exists">
+          <span class="btn-icon-symbol" id="btnStartIcon">&#9654;</span> <span id="btnStartLabel">Extract chats</span>
+        </button>
+        <button id="btnFullSync" class="btn btn-secondary btn-compact" title="Force full parallel re-sync from page 0">
+          &#8635; Full
+        </button>
+        <button id="btnStop" class="btn btn-danger btn-compact" disabled>
+          <span class="btn-icon-symbol">&#9632;</span> Stop
+        </button>
+      </div>
+      <div id="progressContainer" class="progress-container hidden">
+        <div class="progress-bar-bg"><div id="progressBar" class="progress-bar-fill"></div></div>
+        <div id="statusText" class="status-text">Ready</div>
+      </div>
+    </section>
+
+    <!-- Stat chips (also act as the outcome filter) -->
+    <section class="stats-section">
+      <button class="stat-card active" data-outcome="all" id="statAll">
+        <span class="stat-num" id="statTotalCount">0</span><span class="stat-lbl">All</span>
+      </button>
+      <button class="stat-card stat-rejected" data-outcome="rejected" id="statRejected">
+        <span class="stat-num" id="statRejectedCount">0</span><span class="stat-lbl">Rejected</span>
+      </button>
+      <button class="stat-card stat-accepted" data-outcome="accepted" id="statAccepted" title="Extracted submissions accepted by judge or appeal">
+        <span class="stat-num" id="statAcceptedCount">0</span><span class="stat-lbl">Accepted</span>
+      </button>
+      <button class="stat-card stat-error" data-outcome="error" id="statError" title="Submission failed / abandoned / execution errors">
+        <span class="stat-num" id="statErrorCount">0</span><span class="stat-lbl">Sub failed</span>
+      </button>
+      <button class="stat-card stat-pending" data-outcome="pending" id="statPending">
+        <span class="stat-num" id="statPendingCount">0</span><span class="stat-lbl">Pending</span>
+      </button>
+    </section>
+
+    <!-- Multi-select filters (Status, Scenario, Model) + keyword search -->
+    <section class="search-section">
+      <div class="multi-filter-bar">
+        <div class="multi-dd" id="ddStatus">
+          <button type="button" class="multi-btn" id="btnDdStatus" aria-expanded="false">
+            <span class="multi-btn-text" id="lblDdStatus">Status</span>
+            <span class="multi-caret">&#9662;</span>
+          </button>
+          <div class="multi-menu hidden" id="menuDdStatus"></div>
+        </div>
+        <div class="multi-dd" id="ddScenario">
+          <button type="button" class="multi-btn" id="btnDdScenario" aria-expanded="false">
+            <span class="multi-btn-text" id="lblDdScenario">Scenario</span>
+            <span class="multi-caret">&#9662;</span>
+          </button>
+          <div class="multi-menu multi-menu-center hidden" id="menuDdScenario"></div>
+        </div>
+        <div class="multi-dd" id="ddModel">
+          <button type="button" class="multi-btn" id="btnDdModel" aria-expanded="false">
+            <span class="multi-btn-text" id="lblDdModel">Model</span>
+            <span class="multi-caret">&#9662;</span>
+          </button>
+          <div class="multi-menu multi-menu-right hidden" id="menuDdModel"></div>
+        </div>
+      </div>
+      <button type="button" id="btnSyncScenario" class="btn-scenario-sync hidden" title="Fetch only the selected scenario(s) / model(s) from the server and merge into cache">
+        &#9889; Sync filtered
+      </button>
+      <div class="search-input-wrapper">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" id="searchInput" placeholder="Filter by keyword, prompt, chat id..." spellcheck="false">
+        <button id="btnClearSearch" class="btn-clear-search hidden">&times;</button>
+      </div>
+    </section>
+
+    <!-- Selection + the single download control -->
+    <section class="action-bar">
+      <label class="select-all-wrap">
+        <input type="checkbox" id="selectAll"> <span id="selectAllLabel">Select all</span>
+      </label>
+      <label class="sorted-toggle-wrap" for="toggleSorted" title="Organize ZIP into Scenario / Status / Model subfolders">
+        <input type="checkbox" id="toggleSorted" checked>
+        <span class="sorted-slider"></span>
+        <span class="sorted-text">Sorted</span>
+      </label>
+      <div class="action-spacer"></div>
+      <button id="btnClearData" class="btn-ghost" title="Clear extracted data">Clear</button>
+      <button id="btnDownload" class="btn btn-download" disabled>
+        &#11015; <span id="btnDownloadText">Download Sorted ZIP</span> <span id="downloadCount" class="dl-count">(0)</span>
+      </button>
+    </section>
+    <div class="download-hint" id="downloadHint">
+      Downloads as a <code>.zip</code> organized into <code>&lt;Scenario&gt;/&lt;Status&gt;/&lt;Model&gt;</code> subfolders.
+    </div>
+
+    <!-- Conversation list -->
+    <main class="list-container">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">&#129446;</div>
+        <p>No conversations yet.</p>
+        <small>Open a Gray Swan Arena challenge, then click <strong>Extract chats</strong>.</small>
+      </div>
+      <div id="chatsList" class="chats-list"></div>
+    </main>
+  </div>
+
+  <!-- Inspector modal -->
+  <div id="inspectModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2 id="modalTitle">Conversation</h2>
+          <span id="modalScenario" class="modal-scenario-tag"></span>
+        </div>
+        <button id="btnCloseModal" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-meta-bar">
+        <div><strong>Model:</strong> <span id="modalModel"></span></div>
+        <div><strong>Status:</strong> <span id="modalStatusBadge"></span></div>
+        <div><strong>Chat ID:</strong> <code id="modalChatId"></code></div>
+      </div>
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="messages">Messages</button>
+        <button class="modal-tab" data-tab="signals">Signals</button>
+        <button class="modal-tab" data-tab="rawJson">Raw JSON</button>
+      </div>
+      <div class="modal-body">
+        <div id="tabMessages" class="tab-pane active"><div id="modalDialogue" class="dialogue-flow"></div></div>
+        <div id="tabSignals" class="tab-pane"><div id="modalSignals" class="signals-breakdown"></div></div>
+        <div id="tabRawJson" class="tab-pane"><pre id="modalRawJson" class="raw-json-block"></pre></div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnCopyPrompt" class="btn btn-secondary">Copy prompt</button>
+        <button id="btnCopyJson" class="btn btn-secondary">Copy JSON</button>
+        <button id="btnDownloadCurrentJson" class="btn btn-primary">&#11015; JSON</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="../lib/heuristics.js"></script>
+  <script src="../lib/normalizer.js"></script>
+  <script src="../lib/zip-writer.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

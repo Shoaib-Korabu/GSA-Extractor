@@ -1,0 +1,5 @@
+# User exports and runtime artifacts
+*.zip
+gsa-*-chats-*.json
+*.log
+.DS_Store

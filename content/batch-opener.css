@@ -1,0 +1,57 @@
+/* content/batch-opener.css */
+/* Styles for the batch opener button injected into Gray Swan Arena attempt cards */
+
+.gsa-batch-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff !important;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+  margin-left: auto;
+  margin-right: 4px;
+  flex-shrink: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace, sans-serif;
+  letter-spacing: 0.2px;
+  user-select: none;
+}
+
+.gsa-batch-open-btn:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  border-color: #34d399;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.gsa-batch-open-btn:active {
+  transform: translateY(0px);
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+}
+
+.gsa-batch-open-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
+  background: #334155;
+  border-color: #475569;
+}
+
+.gsa-batch-open-btn .gsa-bo-count {
+  font-weight: 700;
+  color: #ecfdf5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.gsa-bo-icon {
+  font-size: 12px;
+  line-height: 1;
+}

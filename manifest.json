@@ -1,30 +1,56 @@
 {
   "manifest_version": 3,
-  "name": "Gray Swan Arena Intelligence Suite",
-  "version": "1.0",
-  "description": "Extracts and exports submissions from Gray Swan Arena.",
+  "name": "Gray Swan Arena Chat Extractor",
+  "version": "2.3.0",
+  "description": "Fast incremental & parallel Gray Swan Arena chat extractor with live website breaks, multi-select filters, scenario sync, sorted JSON/ZIP export, and 1-click batch opener.",
   "icons": {
-    "16": "assets/icon.png",
-    "48": "assets/icon.png",
-    "128": "assets/icon.png"
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
   },
-  "permissions": [
-    "activeTab",
-    "storage",
-    "downloads"
-  ],
-  "host_permissions": [
-    "https://app.grayswan.ai/*"
-  ],
   "action": {
-    "default_popup": "popup.html",
+    "default_title": "Gray Swan Arena Chat Extractor",
+    "default_popup": "popup/popup.html",
     "default_icon": {
-      "16": "assets/icon.png",
-      "48": "assets/icon.png",
-      "128": "assets/icon.png"
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
     }
   },
   "background": {
-    "service_worker": "background.js"
-  }
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://app.grayswan.ai/*",
+        "https://*.grayswan.ai/*"
+      ],
+      "js": [
+        "lib/heuristics.js",
+        "lib/normalizer.js",
+        "lib/zip-writer.js",
+        "content/content.js",
+        "content/batch-opener.js"
+      ],
+      "css": [
+        "content/content.css",
+        "content/batch-opener.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "downloads",
+    "tabs",
+    "windows"
+  ],
+  "host_permissions": [
+    "https://app.grayswan.ai/*",
+    "https://*.grayswan.ai/*"
+  ]
 }
